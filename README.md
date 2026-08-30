@@ -7,10 +7,12 @@ A normal WebExtension **cannot** do this on Firefox (`management.setEnabled` onl
 ## Install
 
 1. Install [Sine](https://github.com/CosmoCreeper/Sine) for Zen/Firefox.
-2. Open Sine mods in settings → add this repo as a custom/unpublished mod.
-3. Enable unsafe JavaScript if Sine asks for local mods.
+2. In Sine settings → custom install, paste: `SuperTost100/IWantAds`
+3. Enable unsafe JavaScript if Sine asks (this mod needs chrome JS).
 4. Restart the browser if the toolbar button does not appear.
 5. Customize toolbar → drag **IWantAds** onto the navbar if needed.
+
+The GitHub repo must be **public** — Sine fetches `theme.json` from `raw.githubusercontent.com`.
 
 ## Configure
 
