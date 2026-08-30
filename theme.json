@@ -2,7 +2,7 @@
   "id": "iwantads",
   "name": "IWantAds",
   "description": "One-click (and allowlist) kill switch for your privacy/ad-block extensions on Zen/Firefox.",
-  "homepage": "https://github.com/tost1/IWantAds",
+  "homepage": "https://github.com/SuperTost100/IWantAds",
   "preferences": "preferences.json",
   "style": {
     "chrome": "userChrome.css"
