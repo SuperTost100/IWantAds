@@ -1,0 +1,56 @@
+[
+  {
+    "type": "text",
+    "label": "**IWantAds** — disable your IWA extension group with one toolbar click, or automatically on allowlisted sites (e.g. Stripe). Changes apply live.",
+    "size": "14px"
+  },
+  {
+    "type": "separator",
+    "label": "IWA extensions",
+    "margin": "20px 0 12px 0"
+  },
+  {
+    "type": "text",
+    "label": "Addon IDs to toggle (comma or newline separated). Find them in about:support → Add-ons, or about:debugging → This Firefox.",
+    "size": "12px"
+  },
+  {
+    "type": "string",
+    "property": "extensions.iwantads.ids",
+    "label": "Extension IDs",
+    "defaultValue": "uBlock0@raymondhill.net"
+  },
+  {
+    "type": "separator",
+    "label": "Allowlist",
+    "margin": "20px 0 12px 0"
+  },
+  {
+    "type": "checkbox",
+    "property": "extensions.iwantads.auto",
+    "label": "Auto-disable IWA extensions when the selected tab is on an allowlisted host",
+    "defaultValue": true
+  },
+  {
+    "type": "text",
+    "label": "Hosts, one per line (or comma). `stripe.com` matches itself and `*.stripe.com`.",
+    "size": "12px"
+  },
+  {
+    "type": "string",
+    "property": "extensions.iwantads.allowlist",
+    "label": "Allowlist hosts",
+    "defaultValue": "stripe.com\ncheckout.stripe.com"
+  },
+  {
+    "type": "separator",
+    "label": "Debug",
+    "margin": "20px 0 12px 0"
+  },
+  {
+    "type": "checkbox",
+    "property": "extensions.iwantads.debug",
+    "label": "Log to Browser Console",
+    "defaultValue": false
+  }
+]

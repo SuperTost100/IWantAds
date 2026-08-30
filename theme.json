@@ -1,0 +1,22 @@
+{
+  "id": "iwantads",
+  "name": "IWantAds",
+  "description": "One-click (and allowlist) kill switch for your privacy/ad-block extensions on Zen/Firefox.",
+  "homepage": "https://github.com/tost1/IWantAds",
+  "preferences": "preferences.json",
+  "style": {
+    "chrome": "userChrome.css"
+  },
+  "scripts": {
+    "iwantads.uc.js": {
+      "include": ["chrome://browser/content/browser.xhtml"]
+    }
+  },
+  "readme": "README.md",
+  "author": "IWantAds",
+  "version": "0.1.0",
+  "tags": ["adblock", "privacy", "extensions", "toggle", "stripe", "zen browser"],
+  "createdAt": "2026-08-30",
+  "updatedAt": "2026-08-30",
+  "fork": ["zen", "firefox"]
+}
