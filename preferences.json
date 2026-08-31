@@ -1,24 +1,13 @@
 [
   {
     "type": "text",
-    "label": "**IWantAds** — disable your IWA extension group with one toolbar click, or automatically on allowlisted sites (e.g. Stripe). Changes apply live.",
+    "label": "**IWantAds** — one click toggles your IWA extension group, or auto on allowlisted sites (e.g. Stripe).",
     "size": "14px"
   },
   {
-    "type": "separator",
-    "label": "IWA extensions",
-    "margin": "20px 0 12px 0"
-  },
-  {
     "type": "text",
-    "label": "Addon IDs to toggle (comma or newline separated). Find them in about:support → Add-ons, or about:debugging → This Firefox.",
-    "size": "12px"
-  },
-  {
-    "type": "string",
-    "property": "extensions.iwantads.ids",
-    "label": "Extension IDs",
-    "defaultValue": "uBlock0@raymondhill.net"
+    "label": "**Pick extensions:** right-click the IWantAds button in the sidebar (or Shift+click). Check the ad-blockers / privacy extensions you want in the group, then Save.",
+    "size": "13px"
   },
   {
     "type": "separator",

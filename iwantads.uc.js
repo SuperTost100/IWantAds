@@ -17,6 +17,8 @@
   const PREF_LOCKED = "extensions.iwantads.locked";
   const PREF_SNAP = "extensions.iwantads.snapshot";
   const WIDGET_ID = "iwantads-button";
+  const PANEL_ID = "iwantads-panel";
+  const ZEN_SIDEBAR = "zen-sidebar-top-buttons";
 
   // --- pure helpers (keep in sync with iwa-logic.mjs) ---
   function parseList(raw) {
@@ -94,6 +96,17 @@
     Services.prefs.setStringPref(name, value);
   }
 
+  function getConfiguredIds() {
+    return (prefString(PREF_IDS, "") || "")
+      .split(/[\n,]+/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+
+  function setConfiguredIds(ids) {
+    setString(PREF_IDS, ids.join("\n"));
+  }
+
   function log(...args) {
     if (prefBool(PREF_DEBUG, false)) {
       console.info("[IWantAds]", ...args);
@@ -125,7 +138,6 @@
       await addon.disable();
       return;
     }
-    // Legacy chrome path
     addon.userDisabled = !enabled;
   }
 
@@ -135,15 +147,20 @@
     return !addon.userDisabled;
   }
 
+  async function listUserExtensions() {
+    const addons = await AddonManager.getAddonsByTypes(["extension"]);
+    return addons
+      .filter((a) => a?.id && a?.name && !a.hidden)
+      .sort((a, b) =>
+        a.name.localeCompare(b.name, undefined, { sensitivity: "base" })
+      );
+  }
+
   async function applyAdsWanted(want) {
-    // Addon IDs are case-sensitive — do not lowercase
-    const rawIds = (prefString(PREF_IDS, "") || "")
-      .split(/[\n,]+/)
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const rawIds = getConfiguredIds();
 
     if (!rawIds.length) {
-      log("no extension IDs configured");
+      log("no extensions selected — right-click the button to pick some");
       setBool(PREF_ADS, want);
       return;
     }
@@ -220,6 +237,7 @@
   function updateButton() {
     const ads = prefBool(PREF_ADS, false);
     const locked = prefBool(PREF_LOCKED, false);
+    const count = getConfiguredIds().length;
     const nodes = win.document.querySelectorAll("#" + WIDGET_ID);
     for (const btn of nodes) {
       btn.setAttribute("iwa-active", ads ? "true" : "false");
@@ -231,7 +249,10 @@
         : locked
           ? "IWantAds OFF (locked) — click to unlock"
           : "IWantAds OFF — blockers active";
-      btn.setAttribute("tooltiptext", tip);
+      btn.setAttribute(
+        "tooltiptext",
+        `${tip}\nLeft-click: toggle · Right-click / Shift+click: pick extensions (${count} selected)`
+      );
     }
   }
 
@@ -259,6 +280,10 @@
 
   async function onManualClick(event) {
     if (event?.button && event.button !== 0) return;
+    if (event?.shiftKey) {
+      await openPickerPanel(event.target);
+      return;
+    }
     const next = nextManualClick({
       locked: prefBool(PREF_LOCKED, false),
       adsWanted: prefBool(PREF_ADS, false),
@@ -282,29 +307,181 @@
     await setState(next.adsWanted, next.locked);
   }
 
+  function filterExtensionRows(list, query) {
+    const q = query.trim().toLowerCase();
+    for (const row of list.querySelectorAll(".iwantads-ext-row")) {
+      const label = row.getAttribute("data-label") || "";
+      const id = row.getAttribute("data-id") || "";
+      const show = !q || label.includes(q) || id.includes(q);
+      row.hidden = !show;
+    }
+  }
+
+  function ensurePanel(doc) {
+    let panel = doc.getElementById(PANEL_ID);
+    if (panel) return panel;
+
+    panel = doc.createXULElement("panel");
+    panel.id = PANEL_ID;
+    panel.setAttribute("type", "arrow");
+    panel.setAttribute("noautohide", "true");
+
+    const root = doc.createXULElement("vbox");
+    root.className = "iwantads-panel-root";
+
+    const title = doc.createXULElement("label");
+    title.className = "iwantads-panel-title";
+    title.setAttribute("value", "Pick IWA extensions");
+
+    const hint = doc.createXULElement("description");
+    hint.className = "iwantads-panel-hint";
+    hint.textContent =
+      "Checked extensions are disabled when ads wanted is ON.";
+
+    const filter = doc.createElementNS("http://www.w3.org/1999/xhtml", "input");
+    filter.className = "iwantads-panel-filter";
+    filter.type = "search";
+    filter.placeholder = "Filter…";
+
+    const list = doc.createXULElement("vbox");
+    list.id = "iwantads-ext-list";
+    list.className = "iwantads-ext-list";
+
+    const scroll = doc.createXULElement("scrollbox");
+    scroll.className = "iwantads-ext-scroll";
+    scroll.setAttribute("orient", "vertical");
+    scroll.appendChild(list);
+
+    const actions = doc.createXULElement("hbox");
+    actions.className = "iwantads-panel-actions";
+
+    const selectVisible = doc.createXULElement("button");
+    selectVisible.className = "iwantads-panel-link";
+    selectVisible.setAttribute("label", "All visible");
+    selectVisible.addEventListener("command", () => {
+      for (const row of list.querySelectorAll(".iwantads-ext-row:not([hidden])")) {
+        row.querySelector("checkbox").checked = true;
+      }
+    });
+
+    const clearAll = doc.createXULElement("button");
+    clearAll.className = "iwantads-panel-link";
+    clearAll.setAttribute("label", "Clear");
+    clearAll.addEventListener("command", () => {
+      for (const cb of list.querySelectorAll("checkbox")) {
+        cb.checked = false;
+      }
+    });
+
+    const save = doc.createXULElement("button");
+    save.className = "iwantads-panel-save";
+    save.setAttribute("label", "Save");
+    save.addEventListener("command", () => {
+      const ids = [...list.querySelectorAll("checkbox:checked")].map(
+        (cb) => cb.dataset.addonId
+      );
+      setConfiguredIds(ids);
+      panel.hidePopup();
+      updateButton();
+      log("saved extension selection", ids);
+    });
+
+    filter.addEventListener("input", () => filterExtensionRows(list, filter.value));
+
+    actions.appendChild(selectVisible);
+    actions.appendChild(clearAll);
+    actions.appendChild(doc.createXULElement("spacer"));
+    actions.appendChild(save);
+
+    root.appendChild(title);
+    root.appendChild(hint);
+    root.appendChild(filter);
+    root.appendChild(scroll);
+    root.appendChild(actions);
+    panel.appendChild(root);
+    doc.documentElement.appendChild(panel);
+    return panel;
+  }
+
+  async function populateExtensionList(list) {
+    while (list.firstChild) list.firstChild.remove();
+
+    const selected = new Set(getConfiguredIds());
+    const extensions = await listUserExtensions();
+
+    if (!extensions.length) {
+      const empty = list.ownerDocument.createXULElement("description");
+      empty.textContent = "No extensions found.";
+      list.appendChild(empty);
+      return;
+    }
+
+    for (const addon of extensions) {
+      const row = list.ownerDocument.createXULElement("hbox");
+      row.className = "iwantads-ext-row";
+      row.setAttribute("data-label", addon.name.toLowerCase());
+      row.setAttribute("data-id", addon.id.toLowerCase());
+
+      const cb = list.ownerDocument.createXULElement("checkbox");
+      cb.className = "iwantads-ext-cb";
+      cb.setAttribute("label", addon.name);
+      cb.setAttribute("tooltiptext", addon.id);
+      cb.dataset.addonId = addon.id;
+      cb.checked = selected.has(addon.id);
+
+      row.appendChild(cb);
+      list.appendChild(row);
+    }
+  }
+
+  async function openPickerPanel(anchor) {
+    const doc = anchor?.ownerDocument || win.document;
+    const panel = ensurePanel(doc);
+    const list = panel.querySelector("#iwantads-ext-list");
+    const filter = panel.querySelector(".iwantads-panel-filter");
+    if (filter) filter.value = "";
+    await populateExtensionList(list);
+    panel.openPopup(anchor, "after_start", 0, 0, false, false);
+  }
+
+  function getDefaultArea(CUI) {
+    if (CUI.areas.includes(ZEN_SIDEBAR)) return ZEN_SIDEBAR;
+    return CUI.AREA_NAVBAR;
+  }
+
   function ensureWidget() {
     try {
       const { CustomizableUI } = ChromeUtils.importESModule(
         "resource:///modules/CustomizableUI.sys.mjs"
       );
-      if (CustomizableUI.getWidget(WIDGET_ID)) return CustomizableUI;
+      const area = getDefaultArea(CustomizableUI);
 
-      CustomizableUI.createWidget({
-        id: WIDGET_ID,
-        type: "button",
-        defaultArea: CustomizableUI.AREA_NAVBAR,
-        label: "IWantAds",
-        tooltiptext: "IWantAds — toggle IWA blockers",
-        onCommand(event) {
-          const chromeWin = event.target.ownerGlobal;
-          chromeWin?.IWantAds?.onManualClick?.(event);
-        },
-        onCreated(btn) {
-          btn.classList.add("toolbarbutton-1", "chromeclass-toolbar-additional");
-          const chromeWin = btn.ownerGlobal;
-          chromeWin?.IWantAds?.updateButton?.();
-        },
-      });
+      if (!CustomizableUI.getWidget(WIDGET_ID)) {
+        CustomizableUI.createWidget({
+          id: WIDGET_ID,
+          type: "button",
+          defaultArea: area,
+          label: "IWantAds",
+          tooltiptext: "IWantAds — toggle IWA blockers",
+          onCommand(event) {
+            const chromeWin = event.target.ownerGlobal;
+            chromeWin?.IWantAds?.onManualClick?.(event);
+          },
+          onCreated(btn) {
+            btn.classList.add("toolbarbutton-1", "chromeclass-toolbar-additional");
+            btn.addEventListener("contextmenu", (e) => {
+              e.preventDefault();
+              btn.ownerGlobal?.IWantAds?.openPickerPanel?.(btn);
+            });
+            btn.ownerGlobal?.IWantAds?.updateButton?.();
+          },
+        });
+      }
+
+      if (!CustomizableUI.getPlacementOfWidget(WIDGET_ID)) {
+        CustomizableUI.addWidgetToArea(WIDGET_ID, area);
+      }
+
       return CustomizableUI;
     } catch (e) {
       console.error("[IWantAds] CustomizableUI failed", e);
@@ -320,7 +497,6 @@
       });
     }
 
-    // Location changes on the selected browser
     const progressListener = {
       onLocationChange(browser) {
         if (browser !== win.gBrowser?.selectedBrowser) return;
@@ -333,7 +509,6 @@
       log("progress listener failed", e);
     }
 
-    // Pref changes from Sine settings
     const observer = {
       observe() {
         win.IWantAds.syncAuto();
@@ -368,7 +543,6 @@
     );
   }
 
-  // Ensure runtime prefs exist
   if (!Services.prefs.prefHasUserValue(PREF_ADS)) setBool(PREF_ADS, false);
   if (!Services.prefs.prefHasUserValue(PREF_LOCKED)) setBool(PREF_LOCKED, false);
   if (!Services.prefs.prefHasUserValue(PREF_SNAP)) setString(PREF_SNAP, "[]");
@@ -378,12 +552,12 @@
     syncAuto,
     updateButton,
     applyAdsWanted,
+    openPickerPanel,
   };
 
   ensureWidget();
   attachWindowListeners();
   updateButton();
-  // Defer first auto sync until browser is ready
   win.setTimeout(() => {
     win.IWantAds.syncAuto();
   }, 500);

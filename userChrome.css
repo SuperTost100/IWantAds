@@ -16,3 +16,81 @@
   outline: 1px solid color-mix(in srgb, currentColor 45%, transparent);
   outline-offset: -2px;
 }
+
+/* Extension picker panel */
+
+#iwantads-panel {
+  -moz-window-shadow: none;
+}
+
+.iwantads-panel-root {
+  min-width: 320px;
+  max-width: 420px;
+  padding: 12px;
+  gap: 10px;
+}
+
+.iwantads-panel-title {
+  font-weight: 600;
+  font-size: 1.05em;
+}
+
+.iwantads-panel-hint {
+  opacity: 0.75;
+  font-size: 0.9em;
+  margin: 0;
+}
+
+.iwantads-panel-filter {
+  width: 100%;
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid color-mix(in srgb, currentColor 25%, transparent);
+  background: Field;
+  color: FieldText;
+}
+
+.iwantads-ext-scroll {
+  max-height: 340px;
+  min-height: 120px;
+  border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+  border-radius: 8px;
+  padding: 4px 0;
+}
+
+.iwantads-ext-list {
+  padding: 4px 8px;
+  gap: 2px;
+}
+
+.iwantads-ext-row {
+  padding: 2px 4px;
+  border-radius: 4px;
+}
+
+.iwantads-ext-row:hover {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.iwantads-ext-cb {
+  width: 100%;
+}
+
+.iwantads-panel-actions {
+  align-items: center;
+  gap: 8px;
+}
+
+.iwantads-panel-link {
+  -moz-appearance: none;
+  background: transparent;
+  border: none;
+  color: LinkText;
+  cursor: pointer;
+  padding: 4px 6px;
+  text-decoration: underline;
+}
+
+.iwantads-panel-save {
+  min-width: 72px;
+}
