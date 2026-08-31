@@ -15,14 +15,14 @@ The GitHub repo must be **public** — Sine fetches `theme.json` from `raw.githu
 
 ## Button
 
-On **Zen Browser**, the button is placed automatically in the **sidebar top buttons** area (left of the tabs). You should see a lightbulb icon there after install/restart.
+On **Zen Browser**, the button is injected into the **sidebar top icons** row (above tabs) — a lightbulb icon. It does **not** appear in the Customize Toolbar palette; look in the sidebar itself.
 
 | Action | Effect |
 | --- | --- |
 | **Left-click** | Toggle ads wanted (disable / re-enable your IWA group) |
 | **Right-click** or **Shift+click** | Open extension picker (checklist) |
 
-If the button is missing: Sine → reinstall or update the mod → restart Zen → check sidebar top icons. You can also move it via **Customize toolbar**.
+If the button is missing: Sine → update/reinstall IWantAds → **restart Zen** → wait a few seconds after the window opens.
 
 ## Pick extensions (no copy-paste IDs)
 

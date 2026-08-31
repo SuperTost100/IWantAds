@@ -18,7 +18,6 @@
   const PREF_SNAP = "extensions.iwantads.snapshot";
   const WIDGET_ID = "iwantads-button";
   const PANEL_ID = "iwantads-panel";
-  const ZEN_SIDEBAR = "zen-sidebar-top-buttons";
 
   // --- pure helpers (keep in sync with iwa-logic.mjs) ---
   function parseList(raw) {
@@ -444,49 +443,74 @@
     panel.openPopup(anchor, "after_start", 0, 0, false, false);
   }
 
-  function getDefaultArea(CUI) {
-    if (CUI.areas.includes(ZEN_SIDEBAR)) return ZEN_SIDEBAR;
-    return CUI.AREA_NAVBAR;
+  /** Zen sidebar top icons — ponytail: DOM inject, not CustomizableUI (Sine/Zen). */
+  function findToolbarTarget(doc) {
+    return (
+      doc.getElementById("zen-sidebar-top-buttons-customization-target") ||
+      doc.getElementById("zen-sidebar-top-buttons") ||
+      doc.getElementById("nav-bar-customization-target")
+    );
   }
 
-  function ensureWidget() {
-    try {
-      const { CustomizableUI } = ChromeUtils.importESModule(
-        "resource:///modules/CustomizableUI.sys.mjs"
-      );
-      const area = getDefaultArea(CustomizableUI);
+  function wireToolbarButton(btn) {
+    if (btn.dataset.iwaWired === "true") return;
+    btn.dataset.iwaWired = "true";
+    btn.classList.add("toolbarbutton-1", "chromeclass-toolbar-additional");
+    btn.setAttribute("label", "IWantAds");
+    btn.addEventListener("command", (e) => onManualClick(e));
+    btn.addEventListener(
+      "click",
+      (e) => {
+        if (e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          openPickerPanel(btn);
+        }
+      },
+      true
+    );
+    btn.addEventListener("contextmenu", (e) => {
+      e.preventDefault();
+      openPickerPanel(btn);
+    });
+  }
 
-      if (!CustomizableUI.getWidget(WIDGET_ID)) {
-        CustomizableUI.createWidget({
-          id: WIDGET_ID,
-          type: "button",
-          defaultArea: area,
-          label: "IWantAds",
-          tooltiptext: "IWantAds — toggle IWA blockers",
-          onCommand(event) {
-            const chromeWin = event.target.ownerGlobal;
-            chromeWin?.IWantAds?.onManualClick?.(event);
-          },
-          onCreated(btn) {
-            btn.classList.add("toolbarbutton-1", "chromeclass-toolbar-additional");
-            btn.addEventListener("contextmenu", (e) => {
-              e.preventDefault();
-              btn.ownerGlobal?.IWantAds?.openPickerPanel?.(btn);
-            });
-            btn.ownerGlobal?.IWantAds?.updateButton?.();
-          },
-        });
-      }
+  function ensureToolbarButton() {
+    const doc = win.document;
+    const target = findToolbarTarget(doc);
+    if (!target) return false;
 
-      if (!CustomizableUI.getPlacementOfWidget(WIDGET_ID)) {
-        CustomizableUI.addWidgetToArea(WIDGET_ID, area);
-      }
-
-      return CustomizableUI;
-    } catch (e) {
-      console.error("[IWantAds] CustomizableUI failed", e);
-      return null;
+    let btn = doc.getElementById(WIDGET_ID);
+    if (!btn) {
+      btn = doc.createXULElement("toolbarbutton");
+      btn.id = WIDGET_ID;
+      target.prepend(btn);
+    } else if (!target.contains(btn)) {
+      target.prepend(btn);
     }
+
+    wireToolbarButton(btn);
+    updateButton();
+    return true;
+  }
+
+  async function initToolbarButton() {
+    try {
+      await win.gBrowser?.delayedStartupPromise;
+    } catch {
+      /* ponytail: delayedStartup optional */
+    }
+
+    for (let i = 0; i < 60; i++) {
+      if (ensureToolbarButton()) {
+        log("toolbar button mounted");
+        return;
+      }
+      await new Promise((r) => win.setTimeout(r, 200));
+    }
+    console.warn(
+      "[IWantAds] Sidebar toolbar not found — is Zen loaded? Try restarting after updating the mod."
+    );
   }
 
   function attachWindowListeners() {
@@ -553,12 +577,17 @@
     updateButton,
     applyAdsWanted,
     openPickerPanel,
+    ensureToolbarButton,
   };
 
-  ensureWidget();
   attachWindowListeners();
+  initToolbarButton();
+  win.addEventListener("aftercustomization", () => ensureToolbarButton(), {
+    once: false,
+  });
   updateButton();
   win.setTimeout(() => {
+    ensureToolbarButton();
     win.IWantAds.syncAuto();
   }, 500);
 
