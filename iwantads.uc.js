@@ -318,6 +318,11 @@
 
   function ensurePanel(doc) {
     let panel = doc.getElementById(PANEL_ID);
+    // Recreate if an older XUL scrollbox panel is still cached in this window.
+    if (panel && !panel.querySelector("div.iwantads-ext-scroll")) {
+      panel.remove();
+      panel = null;
+    }
     if (panel) return panel;
 
     panel = doc.createXULElement("panel");
@@ -342,14 +347,15 @@
     filter.type = "search";
     filter.placeholder = "Filter…";
 
-    const list = doc.createXULElement("vbox");
+    const list = doc.createElementNS("http://www.w3.org/1999/xhtml", "div");
     list.id = "iwantads-ext-list";
     list.className = "iwantads-ext-list";
 
-    const scroll = doc.createXULElement("scrollbox");
+    const scroll = doc.createElementNS("http://www.w3.org/1999/xhtml", "div");
     scroll.className = "iwantads-ext-scroll";
-    scroll.setAttribute("orient", "vertical");
     scroll.appendChild(list);
+    scroll.addEventListener("wheel", (e) => e.stopPropagation(), { passive: true });
+    scroll.addEventListener("DOMMouseScroll", (e) => e.stopPropagation());
 
     const actions = doc.createXULElement("hbox");
     actions.className = "iwantads-panel-actions";
@@ -359,7 +365,8 @@
     selectVisible.setAttribute("label", "All visible");
     selectVisible.addEventListener("command", () => {
       for (const row of list.querySelectorAll(".iwantads-ext-row:not([hidden])")) {
-        row.querySelector("checkbox").checked = true;
+        const cb = row.querySelector("input[type=checkbox]");
+        if (cb) cb.checked = true;
       }
     });
 
@@ -367,7 +374,7 @@
     clearAll.className = "iwantads-panel-link";
     clearAll.setAttribute("label", "Clear");
     clearAll.addEventListener("command", () => {
-      for (const cb of list.querySelectorAll("checkbox")) {
+      for (const cb of list.querySelectorAll("input[type=checkbox]")) {
         cb.checked = false;
       }
     });
@@ -376,7 +383,7 @@
     save.className = "iwantads-panel-save";
     save.setAttribute("label", "Save");
     save.addEventListener("command", () => {
-      const ids = [...list.querySelectorAll("checkbox:checked")].map(
+      const ids = [...list.querySelectorAll("input[type=checkbox]:checked")].map(
         (cb) => cb.dataset.addonId
       );
       setConfiguredIds(ids);
@@ -409,26 +416,39 @@
     const extensions = await listUserExtensions();
 
     if (!extensions.length) {
-      const empty = list.ownerDocument.createXULElement("description");
+      const empty = list.ownerDocument.createElementNS(
+        "http://www.w3.org/1999/xhtml",
+        "p"
+      );
+      empty.className = "iwantads-ext-empty";
       empty.textContent = "No extensions found.";
       list.appendChild(empty);
       return;
     }
 
     for (const addon of extensions) {
-      const row = list.ownerDocument.createXULElement("hbox");
+      const row = list.ownerDocument.createElementNS(
+        "http://www.w3.org/1999/xhtml",
+        "label"
+      );
       row.className = "iwantads-ext-row";
       row.setAttribute("data-label", addon.name.toLowerCase());
       row.setAttribute("data-id", addon.id.toLowerCase());
+      row.title = addon.id;
 
-      const cb = list.ownerDocument.createXULElement("checkbox");
+      const cb = list.ownerDocument.createElementNS(
+        "http://www.w3.org/1999/xhtml",
+        "input"
+      );
+      cb.type = "checkbox";
       cb.className = "iwantads-ext-cb";
-      cb.setAttribute("label", addon.name);
-      cb.setAttribute("tooltiptext", addon.id);
       cb.dataset.addonId = addon.id;
       cb.checked = selected.has(addon.id);
 
       row.appendChild(cb);
+      row.appendChild(
+        list.ownerDocument.createTextNode(` ${addon.name}`)
+      );
       list.appendChild(row);
     }
   }

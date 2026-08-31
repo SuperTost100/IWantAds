@@ -51,21 +51,32 @@
 }
 
 .iwantads-ext-scroll {
-  max-height: 340px;
+  display: block;
+  height: 340px;
+  max-height: 40vh;
   min-height: 120px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
   border-radius: 8px;
   padding: 4px 0;
 }
 
 .iwantads-ext-list {
+  display: flex;
+  flex-direction: column;
   padding: 4px 8px;
   gap: 2px;
 }
 
 .iwantads-ext-row {
-  padding: 2px 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
   border-radius: 4px;
+  cursor: pointer;
 }
 
 .iwantads-ext-row:hover {
@@ -73,7 +84,13 @@
 }
 
 .iwantads-ext-cb {
-  width: 100%;
+  flex: 0 0 auto;
+  margin: 0;
+}
+
+.iwantads-ext-empty {
+  margin: 8px 10px;
+  opacity: 0.75;
 }
 
 .iwantads-panel-actions {
