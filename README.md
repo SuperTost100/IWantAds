@@ -1,53 +1,44 @@
 # IWantAds
 
-Sine mod for Zen Browser (and other Firefox-based browsers): one click — or an allowlist of hosts — disables/re-enables your privacy and ad-block extensions as a group.
+IWantAds is a [Sine](https://github.com/CosmoCreeper/Sine) mod for Zen Browser and other Firefox-based browsers. One click turns off your ad-blocking and privacy extensions as a group, and the next click turns them back on. It can also do this by itself on sites you list, such as `stripe.com`, where blockers break checkout.
 
-A normal WebExtension **cannot** do this on Firefox (`management.setEnabled` only works for themes). This mod runs as chrome JS via Sine and uses `AddonManager`.
+A normal extension can't do this on Firefox, because `management.setEnabled` only works for themes. IWantAds runs as browser chrome JavaScript through Sine and uses `AddonManager` instead.
 
 ## Install
 
-1. Install [Sine](https://github.com/CosmoCreeper/Sine) for Zen/Firefox.
-2. In Sine settings → custom install, paste: `SuperTost100/IWantAds`
-3. Enable unsafe JavaScript if Sine asks (this mod needs chrome JS).
-4. Restart the browser if the button does not appear.
+1. Install [Sine](https://github.com/CosmoCreeper/Sine) for Zen or Firefox.
+2. In Sine's settings, open the custom install field and paste `SuperTost100/IWantAds`.
+3. Allow unsafe JavaScript if Sine asks. The mod needs chrome JavaScript to switch extensions.
+4. Restart the browser.
 
-The GitHub repo must be **public** — Sine fetches `theme.json` from `raw.githubusercontent.com`.
+On Zen, the button is a lightbulb in the sidebar's top row of icons, above the tabs. On other Firefox-based browsers it goes at the start of the main toolbar. It isn't in the Customize Toolbar palette. If it doesn't show up, update or reinstall the mod in Sine, restart, and wait a few seconds after the window opens.
 
-## Button
+## Use it
 
-On **Zen Browser**, the button is injected into the **sidebar top icons** row (above tabs) — a lightbulb icon. It does **not** appear in the Customize Toolbar palette; look in the sidebar itself.
+| Action                      | What happens                                                    |
+| --------------------------- | --------------------------------------------------------------- |
+| Click                       | Turns the extension group off or on, and holds it there         |
+| Click again                 | Lets go, so the allowlist decides again for the current tab     |
+| Right-click, or Shift+click | Opens the picker where you choose the extensions                |
 
-| Action | Effect |
-| --- | --- |
-| **Left-click** | Toggle ads wanted (disable / re-enable your IWA group) |
-| **Right-click** or **Shift+click** | Open extension picker (checklist) |
+In the picker, tick the ad blockers and privacy extensions that belong in the group and click **Save**. The filter box, **All visible** and **Clear** help when you have many extensions.
 
-If the button is missing: Sine → update/reinstall IWantAds → **restart Zen** → wait a few seconds after the window opens.
+Turning the group off applies to every tab, not only the current one. Turning it back on restores only the extensions IWantAds turned off, so an extension you had already disabled stays off.
 
-## Pick extensions (no copy-paste IDs)
+## Allowlist
 
-1. Right-click the IWantAds button (or Shift+click).
-2. Check every ad-blocker / privacy extension you want in the group.
-3. Click **Save**.
+In Sine's settings for IWantAds, list hosts one per line or separated by commas. `stripe.com` matches the site and all its subdomains, such as `checkout.stripe.com`. Writing `*.stripe.com` does the same. The default list is `stripe.com` and `checkout.stripe.com`.
 
-Filter box helps if you have many extensions. **All visible** / **Clear** shortcuts included.
+With the automatic option on, IWantAds turns the group off when the selected tab is on a listed host and back on when you leave. After a manual click, the allowlist leaves the group alone until you click again.
 
-## Sine preferences
+The **Log to Browser Console** option prints what the mod does, for debugging.
 
-| Pref | Purpose |
-| --- | --- |
-| Allowlist hosts | Hosts that auto-enable “ads wanted” (e.g. `stripe.com`) |
-| Auto-disable… | Turn allowlist behavior on/off |
+## Development
 
-## Behavior
-
-- **Ads wanted ON** → selected IWA extensions are disabled (globally, all tabs).
-- **Left-click** → locks and toggles. Click again → unlocks and syncs to the current tab’s allowlist state.
-- **Allowlist (auto)** → when the *selected* tab’s host matches, ads wanted turns on; when it leaves, turns off — only if not manually locked.
-- Re-enable only restores extensions **this mod** disabled (won’t revive ones you already had off).
-
-## Self-check
+The toggle and allowlist logic is in `iwa-logic.mjs`, separate from the browser code in `iwantads.uc.js`, so you can test it with Node:
 
 ```bash
-node check.mjs
+node check.mjs     # prints "check.mjs: ok"
 ```
+
+Sine reads `theme.json` from `raw.githubusercontent.com`, so the repository has to stay public for installs and updates to work.
