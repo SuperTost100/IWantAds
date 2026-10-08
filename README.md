@@ -42,3 +42,7 @@ node check.mjs     # prints "check.mjs: ok"
 ```
 
 Sine reads `theme.json` from `raw.githubusercontent.com`, so the repository has to stay public for installs and updates to work.
+
+## License
+
+[MIT](LICENSE).
