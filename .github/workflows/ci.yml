@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  check:
+    name: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Parse JSON manifests
+        run: |
+          for f in *.json; do
+            node -e 'JSON.parse(require("fs").readFileSync(process.argv[1], "utf8"))' "$f"
+            echo "ok $f"
+          done
+      - name: Syntax-check JavaScript
+        run: |
+          for f in *.js *.mjs; do
+            node --check "$f"
+            echo "ok $f"
+          done
+      - name: Run logic tests
+        run: node check.mjs
+      - name: Lint CSS
+        run: npx --yes stylelint@17.16.0 userChrome.css
